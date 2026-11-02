@@ -45,7 +45,12 @@ func configureHTTPServer(cfg serveConfig) *http.ServeMux {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"ok":true,"service":"terminus"}`))
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "id": toolID, "version": toolVersion, "service": "terminus"})
+	})
+
+	mux.HandleFunc("/tool.json", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(toolCardJSON())
 	})
 
 	uploadRoot := filepath.Join(defaultOutputDir(), "api-uploads")
@@ -186,6 +191,8 @@ func listenAndServe(cfg serveConfig) int {
 	} else {
 		fmt.Fprintf(os.Stderr, "Terminus listening on http://%s/\n", addr)
 	}
+	unregister := registerTool("http://" + addr)
+	defer unregister()
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		fmt.Fprintf(os.Stderr, "serve: %v\n", err)
 		return 1

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,6 +22,32 @@ func TestUI_IndexPage(t *testing.T) {
 	}
 	if !strings.Contains(body, "Drop receipts") {
 		t.Fatal("expected drop zone copy")
+	}
+}
+
+func TestToolCard_ServedAndValid(t *testing.T) {
+	mux := configureHTTPServer(serveConfig{})
+	req := httptest.NewRequest(http.MethodGet, "/tool.json", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	var card struct {
+		Spec    string `json:"spec"`
+		ID      string `json:"id"`
+		Kind    string `json:"kind"`
+		Version string `json:"version"`
+		Actions []struct {
+			Name string `json:"name"`
+			Path string `json:"path"`
+		} `json:"actions"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &card); err != nil {
+		t.Fatalf("tool.json is not JSON: %v", err)
+	}
+	if card.Spec != "tool-card/0.1" || card.ID != toolID || card.Kind != "service" || card.Version != toolVersion {
+		t.Fatalf("unexpected card header: %+v", card)
+	}
+	if len(card.Actions) == 0 || card.Actions[0].Path != "/v1/parse" {
+		t.Fatalf("expected the parse action first: %+v", card.Actions)
 	}
 }
 

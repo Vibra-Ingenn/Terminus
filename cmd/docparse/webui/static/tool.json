@@ -1,0 +1,35 @@
+{
+  "spec": "tool-card/0.1",
+  "id": "terminus",
+  "name": "Terminus",
+  "kind": "service",
+  "version": "1.0.0",
+  "summary": "Reads receipts, invoices and documents into clean fields, on your own PC. No AI needed.",
+  "maker": "Adeptus Camini",
+  "license": "MIT",
+  "homepage": "https://adeptuscamini.com",
+  "default_port": 8765,
+  "health": "/health",
+  "ui": { "path": "/", "label": "Terminus" },
+  "actions": [
+    {
+      "name": "parse",
+      "summary": "Pull the fields (vendor, customer, invoice number, dates, total) and text out of one document.",
+      "method": "POST",
+      "path": "/v1/parse",
+      "input": { "json": { "path": "string", "include_raw": "boolean" }, "multipart": { "file": "file", "path": "string" } },
+      "output": "application/json"
+    },
+    {
+      "name": "heal",
+      "summary": "Diagnose a broken file and write a repaired copy when possible.",
+      "method": "POST",
+      "path": "/v1/heal",
+      "input": { "json": { "path": "string" }, "multipart": { "file": "file" } },
+      "output": "application/json"
+    }
+  ],
+  "optional": [],
+  "cli": "docparse",
+  "mcp": null
+}
