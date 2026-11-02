@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terminus</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Terminus</h1>
+      <p class="tagline">Reads receipts and invoices on your PC. Nothing is uploaded.</p>
+    </div>
+    <div class="toolbar">
+      <label class="check medical-toggle" title="Also look for medical details (patient name, dates of care, and similar)">
+        <input type="checkbox" id="medical_pack">
+        <span>Medical fields</span>
+      </label>
+      <button type="button" id="btn_csv" class="btn secondary" title="Download the table as a comma-separated file">Save as CSV</button>
+      <button type="button" id="btn_excel" class="btn primary" title="Download the table for Microsoft Excel">Save as Excel</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="drop-zone" id="drop_zone" tabindex="0" aria-label="Drop files here">
+      <p class="drop-title">Drop receipts, invoices, or a whole folder here</p>
+      <p class="drop-hint">PDF, Word, photos, and plain text. Everything stays on this computer.</p>
+      <div class="drop-actions">
+        <button type="button" class="btn primary" id="btn_files">Choose files</button>
+        <button type="button" class="btn secondary" id="btn_folder">Choose folder</button>
+      </div>
+      <input type="file" id="file_input" multiple hidden>
+      <input type="file" id="folder_input" webkitdirectory directory multiple hidden>
+      <p class="status" id="status_line" aria-live="polite"></p>
+    </section>
+
+    <section class="table-wrap" aria-label="Results">
+      <table id="results_table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Type</th>
+            <th>Vendor</th>
+            <th>Customer</th>
+            <th>Invoice no.</th>
+            <th>Date</th>
+            <th>Due</th>
+            <th>Total</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="results_body"></tbody>
+      </table>
+    </section>
+
+    <section class="detail" id="detail_panel" hidden>
+      <div class="detail-head">
+        <h2 id="detail_title">Document</h2>
+        <button type="button" class="btn ghost" id="btn_close_detail" title="Close this view">Close</button>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-original">
+          <h3>Original</h3>
+          <div id="preview_box" class="preview-box"></div>
+        </div>
+        <div class="detail-fields">
+          <h3>Fields read</h3>
+          <dl id="fields_list"></dl>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

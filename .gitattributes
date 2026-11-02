@@ -1,0 +1,2 @@
+# PDFs are binary: changing their line endings breaks them.
+*.pdf binary

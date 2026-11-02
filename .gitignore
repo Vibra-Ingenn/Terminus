@@ -1,0 +1,12 @@
+dist/
+/docparse
+/docparse.exe
+workspace/
+logs/
+*.exe
+*.dll
+*.so
+*.dylib
+.DS_Store
+Thumbs.db
+*.log
