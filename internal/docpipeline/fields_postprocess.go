@@ -98,8 +98,10 @@ func normalizeDateString(raw string) (string, string) {
 	if t, err := time.Parse("2006-01-02", raw); err == nil {
 		return t.Format("2006-01-02"), ""
 	}
-	if t, err := time.Parse("January 2, 2006", raw); err == nil {
-		return t.Format("2006-01-02"), ""
+	for _, layout := range []string{"January 2, 2006", "Jan 2, 2006", "Jan. 2, 2006"} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t.Format("2006-01-02"), ""
+		}
 	}
 	if m := regexp.MustCompile(`^(\d{1,2})/(\d{1,2})/(\d{2,4})$`).FindStringSubmatch(raw); len(m) == 4 {
 		mo, _ := strconv.Atoi(m[1])

@@ -186,3 +186,28 @@ func TestFieldAccuracy_DueDateIsNotTheDate(t *testing.T) {
 		t.Fatalf("due_date = %q, want 2026-10-03", fields["due_date"])
 	}
 }
+// Many invoices print each label on one line and its value on the next, under a title line.
+func TestFieldAccuracy_LabelAboveValue(t *testing.T) {
+	text := "Harbor Light Printing Co.\n\n\n14 Wharf Road, Portland, ME 04101\n\n\nINVOICE\n\n\nInvoice #\n\nHLP-20418\n\nDate:\n\nOctober 3, 2026\n\nDue Date:\n\nNovember 2, 2026\n\n\nBill To:\n\n\nMaple Street Bakery\n\n220 Maple Street\n\nPortland, ME 04102\n\n\nDescription\n\nQty\n\nAmount\n\nSubtotal\n\n$410.00\n\nTax (7%)\n\n$28.70\n\n\nTotal Due\n\n$438.70\n"
+	fields := runInvoiceText(t, text)
+	want := map[string]string{
+		"vendor":         "Harbor Light Printing Co.",
+		"customer":       "Maple Street Bakery",
+		"invoice_number": "HLP-20418",
+		"date":           "2026-10-03",
+		"due_date":       "2026-11-02",
+		"total":          "438.70",
+	}
+	for k, v := range want {
+		if fields[k] != v {
+			t.Errorf("%s = %q, want %q", k, fields[k], v)
+		}
+	}
+}
+
+func TestFieldAccuracy_ShortMonthAndSlashDueDate(t *testing.T) {
+	fields := runInvoiceText(t, "Blue Kettle Catering\nInvoice No.\n1187\nDate:\nOct 28, 2026\nPayment Due:\n11/27/2026\nBalance Due\n$463.31\n")
+	if fields["date"] != "2026-10-28" || fields["due_date"] != "2026-11-27" || fields["invoice_number"] != "1187" {
+		t.Fatalf("got date=%q due_date=%q invoice_number=%q", fields["date"], fields["due_date"], fields["invoice_number"])
+	}
+}

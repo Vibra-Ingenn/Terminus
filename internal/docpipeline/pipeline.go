@@ -174,7 +174,9 @@ var generalPatterns = []patternDef{
 	// Invoice / receipt number (must contain a digit; see acceptInvoiceNumber)
 	{
 		field:      "invoice_number",
-		pattern:    regexp.MustCompile(`(?i)(?:invoice|receipt)(?:\s*(?:#|no\.?|num|number))?[:\s#]+([A-Z0-9][A-Z0-9\-]{1,28})\b`),
+		// The number must contain a digit inside the pattern itself: otherwise a title line
+		// ("INVOICE" above "Invoice #  HLP-20418") swallows the label and the real number is lost.
+		pattern:    regexp.MustCompile(`(?i)(?:invoice|receipt)(?:\s*(?:#|no\.?|num|number))?[:\s#]+([A-Z0-9][A-Z0-9\-]*[0-9][A-Z0-9\-]*|[0-9])\b`),
 		confidence: 0.88,
 		source:     "invoice_number_labeled",
 	},
@@ -208,6 +210,13 @@ var generalPatterns = []patternDef{
 		pattern:    regexp.MustCompile(`(?im)^([A-Za-z0-9][A-Za-z0-9&',.\- ]{2,50})\s*-\s*(?:INVOICE|RECEIPT|BILL)\b`),
 		confidence: 0.78,
 		source:     "vendor_header",
+	},
+	// The business name is usually the very first line of an invoice or receipt.
+	{
+		field:      "vendor",
+		pattern:    regexp.MustCompile(`\A\s*([A-Z][A-Za-z&',.\- ]{2,50})[ \t]*\n`),
+		confidence: 0.77,
+		source:     "vendor_first_line",
 	},
 	{
 		field:      "vendor",
@@ -255,7 +264,7 @@ var generalPatterns = []patternDef{
 	},
 	{
 		field:      "due_date",
-		pattern:    regexp.MustCompile(`(?i)(?:payment\s+due|due\s+date|due)[:\s]+(\d{4}-\d{2}-\d{2})`),
+		pattern:    regexp.MustCompile(`(?i)(?:payment\s+due|due\s+date|due)[:\s]+(\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|[A-Za-z]{3,9}\.?\s+\d{1,2},\s+\d{4})`),
 		confidence: 0.82,
 		source:     "due_date_labeled",
 	},
@@ -268,7 +277,8 @@ var generalPatterns = []patternDef{
 	// Customer on invoice (seller is vendor, not name)
 	{
 		field:      "customer",
-		pattern:    regexp.MustCompile(`(?im)^(?:customer|bill\s+to|sold\s+to)[ \t]*:[ \t]*([A-Z][A-Za-z0-9&',.\- ]{2,60})`),
+		// The name can sit on the same line as the label or on the next one ("Bill To:" above "Maple Street Bakery").
+		pattern:    regexp.MustCompile(`(?im)^(?:customer|bill(?:ed)?\s+to|sold\s+to)(?:[ \t]*:[ \t]*(?:\n[ \t]*)*|[ \t]*(?:\n[ \t]*)+)([A-Z][A-Za-z0-9&',.\- ]{2,60})`),
 		confidence: 0.78,
 		source:     "customer_labeled",
 	},
@@ -367,7 +377,7 @@ func hasDigit(s string) bool {
 }
 
 func acceptInvoiceNumber(value string) bool {
-	return hasDigit(value) && !strings.EqualFold(value, "file")
+	return hasDigit(value) && len(value) <= 30 && !strings.EqualFold(value, "file")
 }
 
 func acceptTotalAmount(text string, matchStart int) bool {
@@ -397,8 +407,29 @@ func acceptZipCode(text string, start int) bool {
 	return true
 }
 
+// notVendorWords are headings and table words that are printed in capitals but are never the business name.
+var notVendorWords = []string{"INVOICE", "RECEIPT", "TOTAL", "SUBTOTAL", "DESCRIPTION", "QTY", "QUANTITY",
+	"AMOUNT", "BALANCE", "BILL TO", "SHIP TO", "SOLD TO", "PAID", "THANK YOU", "ESTIMATE", "QUOTE", "ORDER", "PAGE"}
+
+func isNotVendor(value string) bool {
+	up := strings.ToUpper(strings.TrimSpace(value))
+	if hasDigit(up) {
+		return true
+	}
+	for _, w := range notVendorWords {
+		if strings.Contains(up, w) {
+			return true
+		}
+	}
+	return false
+}
+
+func acceptVendorFirstLine(value string) bool {
+	return !isNotVendor(value) && len(strings.Fields(value)) <= 7
+}
+
 func acceptVendorBanner(value string) bool {
-	if !mostlyUppercase(value) {
+	if !mostlyUppercase(value) || isNotVendor(value) {
 		return false
 	}
 	up := strings.ToUpper(value)
@@ -472,6 +503,9 @@ func ExtractCandidates(text string, packs ...string) ExtractionResult {
 				}
 			case "vendor":
 				if pd.source == "vendor_banner" && !acceptVendorBanner(value) {
+					continue
+				}
+				if pd.source == "vendor_first_line" && !acceptVendorFirstLine(value) {
 					continue
 				}
 			case "zip":

@@ -903,9 +903,33 @@ func ocrPDFPagesWithPdftoppm(path, lang, toolName, tess, pdftoppm, dir string) T
 }
 
 func runTesseractOnFile(tess, imagePath, lang string) (string, error) {
+	text, _, err := ocrBestReading(tess, imagePath, lang)
+	return text, err
+}
+
+// moneyAmount matches prices like 8.49 or 1,150.00.
+var moneyAmount = regexp.MustCompile(`\b\d{1,3}(?:,\d{3})*\.\d{2}\b`)
+
+// ocrBestReading reads an image twice: Tesseract's normal page layout, and "one block of text".
+// On receipts the normal layout often drops the column of prices on the right; the block reading
+// keeps each item on one line with its price. The reading with more prices wins; a tie keeps the
+// normal layout, so books, letters and manuals read exactly as before.
+func ocrBestReading(tess, imagePath, lang string) (string, string, error) {
+	normal, stderr, err := tesseractOnce(tess, imagePath, lang, "")
+	if err != nil {
+		return "", stderr, err
+	}
+	block, _, err2 := tesseractOnce(tess, imagePath, lang, "6")
+	if err2 == nil && len(moneyAmount.FindAllString(block, -1)) > len(moneyAmount.FindAllString(normal, -1)) {
+		return block, stderr, nil
+	}
+	return normal, stderr, nil
+}
+
+func tesseractOnce(tess, imagePath, lang, psm string) (string, string, error) {
 	tmp, err := os.CreateTemp("", "terminus-ocr-*")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	tmp.Close()
 	outBase := tmp.Name()
@@ -914,15 +938,21 @@ func runTesseractOnFile(tess, imagePath, lang string) (string, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, tess, imagePath, outBase, "-l", lang)
+	args := []string{imagePath, outBase, "-l", lang}
+	if psm != "" {
+		args = append(args, "--psm", psm)
+	}
+	cmd := exec.CommandContext(ctx, tess, args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return "", err
+		return "", stderr.String(), err
 	}
 	data, err := os.ReadFile(outBase + ".txt")
 	if err != nil {
-		return "", err
+		return "", stderr.String(), err
 	}
-	return string(data), nil
+	return string(data), stderr.String(), nil
 }
 
 func runTesseract(path, lang, toolName string) ToolResult {
@@ -930,41 +960,20 @@ func runTesseract(path, lang, toolName string) ToolResult {
 		return ocrPDFPages(path, lang, toolName)
 	}
 
-	// Tesseract writes to <out>.txt. Use a temp file we clean up after.
-	tmp, err := os.CreateTemp("", "terminus-ocr-*")
-	if err != nil {
-		return ToolResult{ToolName: toolName, Success: false, Error: fmt.Sprintf("tempfile: %v", err)}
-	}
-	tmp.Close()
-	outBase := tmp.Name()
-	defer os.Remove(outBase)          // base doesn't actually exist as a file
-	defer os.Remove(outBase + ".txt") // but the .txt output does
-
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-
 	tess, err := findTesseractExecutable()
 	if err != nil {
 		return ToolResult{ToolName: toolName, Success: false, Error: "Tesseract is not installed."}
 	}
-	cmd := exec.CommandContext(ctx, tess, path, outBase, "-l", lang)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
+	data, stderr, err := ocrBestReading(tess, path, lang)
+	if err != nil {
 		return ToolResult{
 			ToolName: toolName,
 			Success:  false,
-			Error:    fmt.Sprintf("tesseract failed: %v. stderr: %s", err, truncateStr(stderr.String(), 300)),
+			Error:    fmt.Sprintf("tesseract failed: %v. stderr: %s", err, truncateStr(stderr, 300)),
 		}
 	}
 
-	data, err := os.ReadFile(outBase + ".txt")
-	if err != nil {
-		return ToolResult{ToolName: toolName, Success: false, Error: fmt.Sprintf("read tesseract output: %v", err)}
-	}
-
-	text := strings.TrimSpace(string(data))
+	text := strings.TrimSpace(data)
 	if text == "" {
 		return ToolResult{ToolName: toolName, Success: true, Output: "(OCR returned no text — image may be too low resolution or not contain recognizable text)"}
 	}
