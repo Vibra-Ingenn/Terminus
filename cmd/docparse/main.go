@@ -53,8 +53,9 @@ func main() {
 		log.SetOutput(io.Discard)
 	}
 	if len(os.Args) < 2 {
-		fmt.Fprint(os.Stderr, usageText)
-		os.Exit(2)
+		// Double-clicked (no command): open the screen. "docparse help" lists the commands.
+		fmt.Fprintln(os.Stderr, "Opening Terminus in your browser. Close this window to stop it. (Commands: docparse help)")
+		os.Exit(runUI(nil))
 	}
 
 	cmd := strings.ToLower(os.Args[1])

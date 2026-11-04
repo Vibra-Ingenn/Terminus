@@ -12,14 +12,12 @@ Drop in your receipts and invoices; get a clean spreadsheet. Runs on your own PC
 
 ### Windows
 
-1. Download `docparse.exe` from the [Releases](../../releases) page into a folder you control (for example `C:\Tools\Terminus\`).
-2. Double-click is not wired yet — open **Command Prompt** or **PowerShell** in that folder and run:
+1. Download **[Terminus-windows.zip](../../releases/latest/download/Terminus-windows.zip)** and unzip it into a folder you control (for example `C:\Tools\Terminus\`).
+2. Double-click `docparse.exe`. Your browser opens to the Terminus screen. Drop files on the big area, then use **Save as Excel** or **Save as CSV**. Close the black window to stop Terminus.
 
-   ```text
-   docparse ui
-   ```
+   Windows may say "Windows protected your PC" the first time, because Terminus is new and not yet widely downloaded. Click **More info**, then **Run anyway**.
 
-   Your browser opens to the Terminus screen. Drop files on the big area, then use **Save as Excel** or **Save as CSV**.
+From a terminal, `docparse help` lists every command (`parse`, `batch`, `text`, `check`, `heal`, `serve`).
 
 ### Linux
 
