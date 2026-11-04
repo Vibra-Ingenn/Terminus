@@ -9,7 +9,8 @@ import (
 	"terminus/internal/docpipeline"
 )
 
-const projectInvoicesDir = `C:\Dev\_test\project_invoices`
+// Optional local fixtures: set TERMINUS_INVOICE_FIXTURES to a folder of sample invoices.
+var projectInvoicesDir = os.Getenv("TERMINUS_INVOICE_FIXTURES")
 
 type invoiceExpect struct {
 	file          string
@@ -36,7 +37,7 @@ func runInvoiceText(t *testing.T, text string) map[string]string {
 }
 
 func TestFieldAccuracy_ProjectInvoices(t *testing.T) {
-	if _, err := os.Stat(projectInvoicesDir); err != nil {
+	if _, err := os.Stat(projectInvoicesDir); projectInvoicesDir == "" || err != nil {
 		t.Skip("project invoice fixtures not present on this machine")
 	}
 
@@ -115,7 +116,7 @@ func TestFieldAccuracy_ProjectInvoices(t *testing.T) {
 }
 
 func TestFieldAccuracy_MedjanusOrdinaryInvoice(t *testing.T) {
-	path := `C:\Dev\_test\medjanus\ordinary\invoice.txt`
+	path := os.Getenv("TERMINUS_SAMPLE_INVOICE")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Skip("medjanus ordinary invoice fixture not present")

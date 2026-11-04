@@ -114,9 +114,9 @@ From real runs on 96 real PDFs (books, papers, manuals, datasheets, cheat sheets
 - **Unusual layouts** — tables and multi-column PDFs can confuse line-based reading.
 - **No made-up numbers** — if a field is not on the page, it stays empty.
 
-## Support Terminus
+## Like it?
 
-Terminus is free and stays free. Sponsorship keeps it updated: new document types, fixes, better accuracy. If it saves you time, please consider sponsoring it.
+Terminus is free and stays free. If it saves you time, a star on GitHub helps other people find it.
 
 Want it to run by itself (watch a folder, fill a spreadsheet every day)? **Vibe Engine**, my paid tool, runs Terminus and my other tools together, the same way every time: [adeptuscamini.com](https://adeptuscamini.com). Either way, thanks for using it.
 
