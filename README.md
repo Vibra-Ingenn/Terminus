@@ -6,7 +6,7 @@
 
 Drop in your receipts and invoices; get a clean spreadsheet. Runs on your own PC — no AI, nothing uploaded.
 
-![Terminus screen](docs/screenshots/terminus-ui-1280.png)
+![The Terminus screen: five files dropped in, a table of vendors, dates and totals](docs/screenshots/terminus-screen.png)
 
 ## Download and run
 

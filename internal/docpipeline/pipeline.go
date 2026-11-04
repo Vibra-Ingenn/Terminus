@@ -384,6 +384,12 @@ func trimPatientName(value string) string {
 	return strings.TrimSpace(value)
 }
 
+// isDueLabel reports whether the label starting at matchStart is preceded by "due" or "payment due".
+func isDueLabel(text string, matchStart int) bool {
+	before := strings.ToLower(strings.TrimRight(text[max(0, matchStart-12):matchStart], " \t"))
+	return strings.HasSuffix(before, "due")
+}
+
 func acceptZipCode(text string, start int) bool {
 	if start > 0 && text[start-1] == '-' {
 		return false
@@ -470,6 +476,11 @@ func ExtractCandidates(text string, packs ...string) ExtractionResult {
 				}
 			case "zip":
 				if !acceptZipCode(text, start) {
+					continue
+				}
+			case "date":
+				// "Due Date: ..." is the due date, not the document date.
+				if pd.source == "date_labeled" && isDueLabel(text, m[0]) {
 					continue
 				}
 			}

@@ -1,17 +1,24 @@
 :root {
-  --bg: #f4f6f8;
-  --card: #ffffff;
-  --text: #1a2332;
-  --muted: #5c6b7a;
-  --line: #d8dee6;
-  --accent: #1f6feb;
-  --accent-soft: #e8f1ff;
-  --empty: #f0f2f5;
-  --grey-row: #eceff3;
-  --dup: #fff4e5;
-  --danger: #b42318;
+  /* Same dark theme as adeptuscamini.com and Janus (Linear values). Colour only means something:
+     indigo = main action, yellow = look at this, red = error. */
+  --bg: #08090a;
+  --card: #0f1011;
+  --raised: #141516;
+  --hover: #1c1c1f;
+  --text: #f7f8f8;
+  --muted: #8a8f98;
+  --faint: #62666d;
+  --line: #23252a;
+  --line-2: #34343a;
+  --accent: #7170ff;
+  --accent-soft: rgba(113, 112, 255, 0.14);
+  --empty: #0c0d0e;
+  --grey-row: #0c0d0e;
+  --dup: rgba(240, 191, 0, 0.07);
+  --warn: #f0bf00;
+  --danger: #eb5757;
   --radius: 10px;
-  --shadow: 0 1px 3px rgba(26, 35, 50, 0.08);
+  --shadow: none;
 }
 
 * {
@@ -20,7 +27,8 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
   background: var(--bg);
   color: var(--text);
   line-height: 1.45;
@@ -74,7 +82,7 @@ main {
 
 .drop-zone {
   background: var(--card);
-  border: 2px dashed #9eb4d0;
+  border: 1px dashed var(--line-2);
   border-radius: var(--radius);
   padding: 2rem 1.25rem;
   text-align: center;
@@ -123,7 +131,16 @@ main {
 }
 
 .btn.secondary {
-  background: #eef2f7;
+  background: var(--raised);
+}
+
+.btn:hover {
+  background: var(--hover);
+}
+
+.btn.primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
 }
 
 .btn.ghost {
@@ -168,8 +185,9 @@ td {
 }
 
 th {
-  background: #f8fafc;
-  font-weight: 600;
+  background: var(--raised);
+  color: var(--muted);
+  font-weight: 500;
   position: sticky;
   top: 0;
 }
@@ -179,7 +197,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #f6f9fc;
+  background: var(--hover);
 }
 
 tbody tr.selected {
@@ -198,7 +216,7 @@ tbody tr.duplicate {
 
 td.empty {
   background: var(--empty);
-  color: #9aa5b1;
+  color: var(--faint);
 }
 
 .tag {
@@ -207,13 +225,13 @@ td.empty {
   font-weight: 600;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: #ffe8cc;
-  color: #8a4b00;
+  background: rgba(240, 191, 0, 0.12);
+  color: var(--warn);
 }
 
 .tag.grey {
-  background: #e2e6eb;
-  color: #4a5563;
+  background: var(--raised);
+  color: var(--muted);
 }
 
 .detail {
@@ -259,7 +277,8 @@ td.empty {
   max-height: 28rem;
   overflow: auto;
   padding: 0.75rem;
-  background: #fafbfc;
+  background: var(--empty);
+  color: var(--text);
   white-space: pre-wrap;
   font-family: Consolas, "Courier New", monospace;
   font-size: 0.85rem;

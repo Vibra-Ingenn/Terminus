@@ -175,3 +175,14 @@ func TestExtractCandidates_DischargeSummaryFields(t *testing.T) {
 		}
 	}
 }
+
+func TestFieldAccuracy_DueDateIsNotTheDate(t *testing.T) {
+	text := "ACME SUPPLY CO.\nInvoice #: INV-2041\nBill To: Harbor Cafe LLC\nDate: 2026-09-03\nDue Date: 2026-10-03\nTotal Due: $258.23"
+	fields := runInvoiceText(t, text)
+	if fields["date"] != "2026-09-03" {
+		t.Fatalf("date = %q, want 2026-09-03 (the due date was taken as the date)", fields["date"])
+	}
+	if fields["due_date"] != "2026-10-03" {
+		t.Fatalf("due_date = %q, want 2026-10-03", fields["due_date"])
+	}
+}
