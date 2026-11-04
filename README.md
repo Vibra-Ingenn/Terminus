@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.jpg" alt="Terminus: documents in, finished data out" width="100%">
+</p>
+
 # Terminus
 
 Drop in your receipts and invoices; get a clean spreadsheet. Runs on your own PC — no AI, nothing uploaded.
