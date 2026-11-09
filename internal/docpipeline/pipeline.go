@@ -593,16 +593,21 @@ func Verify(r ExtractionResult) VerificationResult {
 		start, end int
 		field      string
 		value      string
+		conf       float64
 	}
 	var spans []span
 	for _, c := range r.Candidates {
-		spans = append(spans, span{c.Span[0], c.Span[1], c.Field, c.Value})
+		spans = append(spans, span{c.Span[0], c.Span[1], c.Field, c.Value, c.Confidence})
 	}
 	for i := 0; i < len(spans); i++ {
 		for j := i + 1; j < len(spans); j++ {
 			a, b := spans[i], spans[j]
 			// Overlapping spans across different fields signal potential confusion
-			if a.field != b.field && a.start < b.end && b.start < a.end {
+			// Only candidates strong enough to be kept can confuse a result: a
+			// bare date guessed as a birth date (0.55) loses to the labelled
+			// invoice date anyway, and warning about it only alarms people.
+			if a.field != b.field && a.start < b.end && b.start < a.end &&
+				a.conf >= confidenceThreshold && b.conf >= confidenceThreshold {
 				conflicts = append(conflicts, fmt.Sprintf(
 					"span overlap: %q(%s) overlaps %q(%s) at [%d,%d]",
 					a.value, a.field, b.value, b.field, b.start, a.end,

@@ -110,7 +110,17 @@ func normalizeDateString(raw string) (string, string) {
 		if y < 100 {
 			y += 2000
 		}
+		// 15/09/2026 can only be day/month/year.
+		if mo > 12 && day <= 12 {
+			mo, day = day, mo
+		}
 		t := time.Date(y, time.Month(mo), day, 0, 0, 0, 0, time.UTC)
+		// time.Date rolls impossible dates forward (month 99 became 2034), so
+		// a misread like 99/15/2026 is kept as written, not turned into a
+		// real-looking date.
+		if int(t.Month()) != mo || t.Day() != day {
+			return raw, fmt.Sprintf("date %q is not a real date (probably misread); check it on the document", raw)
+		}
 		warn := ""
 		if mo <= 12 && day <= 12 && mo != day {
 			warn = fmt.Sprintf("date %q was read as month/day/year (US order); change it on the document if that is wrong", raw)

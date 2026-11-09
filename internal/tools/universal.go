@@ -212,7 +212,9 @@ func (r *Registry) toolDocumentParse(args map[string]any) ToolResult {
 	for _, p := range parsed.Pages {
 		textLen += len(p.Text)
 	}
-	parsed.Warnings, parsed.Notes = splitNotes(parsed.Warnings, textLen)
+	var notes []string
+	parsed.Warnings, notes = splitNotes(parsed.Warnings, textLen)
+	parsed.Notes = append(parsed.Notes, notes...)
 	b, err := json.MarshalIndent(parsed, "", "  ")
 	if err != nil {
 		return ToolResult{ToolName: toolName, Success: false, Error: fmt.Sprintf("marshal: %v", err)}
@@ -222,6 +224,22 @@ func (r *Registry) toolDocumentParse(args map[string]any) ToolResult {
 		log.Printf("[DOC_PARSE_WARNINGS] %s: %s", path, strings.Join(parsed.Warnings, " | "))
 	}
 	return ToolResult{ToolName: toolName, Success: true, Output: string(b)}
+}
+
+// ocrMarker is the "[OCR lang=eng]" line image OCR puts at the top of its
+// output. It is a note for the text command, not part of the document, and
+// used to show up as the document's title.
+var ocrMarker = regexp.MustCompile(`(?m)^\[OCR lang=[^\]\n]*\][ \t]*\n?`)
+
+func isOCRMethod(method string) bool {
+	return strings.HasPrefix(method, "ocr_extract") || method == "image_extract"
+}
+
+// billHints are amounts and words that mark a bill even when OCR mangled the labels.
+var billHints = regexp.MustCompile(`(?i)\$\s?\d+[.,]\d{2}|\b(?:tax|qty|subtotal|total|invoice|receipt|statement|amount|due|charge[sd]?|paid|cash|change|visa|mastercard)\b`)
+
+func looksLikeBill(text string) bool {
+	return len(billHints.FindAllString(text, 3)) >= 3
 }
 
 func (r *Registry) parseDocumentForTools(path string, includeRaw bool, packs ...string) (documentParseOutput, error) {
@@ -259,7 +277,15 @@ func (r *Registry) parseDocumentForTools(path string, includeRaw bool, packs ...
 	out.Warnings = append(out.Warnings, extractWarns...)
 	rawText, labelWarns := CleanExtractionBody(rawText)
 	out.Warnings = append(out.Warnings, labelWarns...)
-	rawText = strings.TrimSpace(rawText)
+	rawText = strings.TrimSpace(ocrMarker.ReplaceAllString(rawText, ""))
+	fromOCR := isOCRMethod(method)
+	if fromOCR {
+		var fixes int
+		rawText, fixes = docpipeline.RepairOCRText(rawText)
+		if fixes > 0 {
+			out.Notes = append(out.Notes, fmt.Sprintf("read from a photo or scan; fixed %d OCR misreading(s) in labels and prices — check the numbers against the original", fixes))
+		}
+	}
 	if rawText == "" || strings.Contains(rawText, "returned no text") {
 		out.Status = "needs_vision"
 		out.Method = method
@@ -331,6 +357,16 @@ func (r *Registry) parseDocumentForTools(path string, includeRaw bool, packs ...
 		} else if docType != "document" {
 			out.Warnings = append(out.Warnings, "text extracted, but no structured fields were detected")
 		}
+	}
+	if fromOCR && out.Fields["total"] != "" {
+		if w := docpipeline.CheckTotalArithmetic(rawText, out.Fields["total"]); w != "" {
+			out.Warnings = append(out.Warnings, w)
+		}
+	}
+	if fromOCR && docType == "document" && looksLikeBill(rawText) {
+		// A photo of a receipt that OCR read too badly to find the labels
+		// used to come back as a plain "document" with no word of warning.
+		out.Warnings = append(out.Warnings, "this looks like a bill or receipt, but the photo or scan was too unclear to read its details; try a flatter, brighter, straight-on photo")
 	}
 
 	pageTexts := splitPageTexts(rawText)
@@ -919,12 +955,29 @@ func ocrBestReading(tess, imagePath, lang string) (string, string, error) {
 	if err != nil {
 		return "", stderr, err
 	}
+	best := normal
 	block, _, err2 := tesseractOnce(tess, imagePath, lang, "6")
 	if err2 == nil && len(moneyAmount.FindAllString(block, -1)) > len(moneyAmount.FindAllString(normal, -1)) {
-		return block, stderr, nil
+		best = block
 	}
-	return normal, stderr, nil
+	// A weak reading is usually a tilted, dim or grainy photo: clean the
+	// picture up and read it again, keeping whichever reading finds more of
+	// what a bill holds. Good scans score well and skip this extra pass.
+	if ocrReadingScore(best) < weakReadingScore {
+		if cleaned, err := cleanPhotoForOCR(imagePath); err == nil {
+			defer os.Remove(cleaned)
+			if again, _, err := tesseractOnce(tess, cleaned, lang, "6"); err == nil &&
+				billReadingScore(again) > billReadingScore(best) {
+				best = again
+			}
+		}
+	}
+	return best, stderr, nil
 }
+
+// weakReadingScore: below this many bill words and amounts, a reading is
+// worth a second try on a cleaned-up copy of the picture.
+const weakReadingScore = 12
 
 func tesseractOnce(tess, imagePath, lang, psm string) (string, string, error) {
 	tmp, err := os.CreateTemp("", "terminus-ocr-*")

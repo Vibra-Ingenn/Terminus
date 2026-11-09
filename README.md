@@ -35,6 +35,8 @@ Scanned PDFs and phone photos are read with **Tesseract** (free OCR). Terminus i
 
 Point `TESSDATA_PREFIX` at the `tessdata` folder if the installer does not do it for you.
 
+**Messy photos:** when a photo reads badly, Terminus cleans it up and reads it again: it straightens a tilted page, evens out dim or uneven light, blanks the table around the page and removes grain. It then fixes the typical OCR slips in labels (`TOTAL OVE` → `TOTAL DUE`, `Bilt to` → `Bill to`) and prices (`$38.5O` → `$38.50`). Names and amounts are never guessed. If the total doesn't match the amounts above it, or a date can't be real (`99/15/2026`), Terminus warns you instead of passing it off as right.
+
 **Scanned PDFs:** Terminus pulls embedded page images out of the PDF first and runs OCR on them — you do not need Poppler for most phone scans (colour JPEG and greyscale work; black-and-white fax-style pages are supported too). If a page still needs rendering, Terminus can use **Poppler** (`pdftoppm`) from a `poppler\` folder next to `docparse.exe` (GPL — see `poppler/README.txt`) or from your PATH. Poppler is optional backup only.
 
 ## What it finds
@@ -110,7 +112,7 @@ From real runs on 96 real PDFs (books, papers, manuals, datasheets, cheat sheets
 - **Text turned into drawings** (the 1 of 96 that didn't read): some PDFs store words as drawn shapes, with no text inside. Terminus says so; with Poppler installed it can read those pages with OCR.
 - **Bills, receipts, statements, letters and medical records** get fields. Other documents (books, manuals) get their text, title and page count, not guessed bill fields.
 - **Handwriting** — not reliable; typed or printed text works best.
-- **Very poor scans and photos at a sharp angle** — Tesseract may return little or no text; install Tesseract and try a flatter, brighter photo.
+- **Very poor scans and photos** — tilts up to about 20°, dim light and grain are cleaned up automatically, but a very blurry photo can still lose fields. Terminus warns when a photo looks like a bill it couldn't read; retake it flatter and brighter. Names read from a rough photo can keep OCR typos ("Harbor Cate").
 - **Symbol-font PDFs** (keyboard icons, dingbats) — text is cleaned up and you get a warning; some icons are dropped rather than guessed.
 - **Damaged PDFs** — Terminus tries to recover text and says so in `warnings`, not in the exported body text.
 - **Unusual layouts** — tables and multi-column PDFs can confuse line-based reading.

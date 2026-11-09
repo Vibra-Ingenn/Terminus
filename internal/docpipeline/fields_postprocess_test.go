@@ -35,3 +35,21 @@ func TestNormalizeDateField(t *testing.T) {
 		t.Fatalf("original %q", m["date_on_document"])
 	}
 }
+
+func TestNormalizeDateStringImpossibleAndDayFirst(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"09/15/2026", "2026-09-15"},
+		{"15/09/2026", "2026-09-15"}, // only day/month/year makes sense
+		{"99/15/2026", "99/15/2026"}, // misread: kept, not rolled into 2034
+		{"02/30/2026", "02/30/2026"}, // February 30th does not exist
+	}
+	for _, c := range cases {
+		got, warn := normalizeDateString(c.in)
+		if got != c.want {
+			t.Errorf("normalizeDateString(%q) = %q, want %q", c.in, got, c.want)
+		}
+		if got == c.in && warn == "" {
+			t.Errorf("normalizeDateString(%q): impossible date gave no warning", c.in)
+		}
+	}
+}
