@@ -1,0 +1,25 @@
+Terminus - Freeware Licence
+Copyright (c) 2026 Adeptus Camini. All rights reserved.
+
+Terminus is free. You may download it, install it and use it, for personal or business
+work, on as many computers as you like, at no cost.
+
+You may:
+  - use it for any lawful purpose, including paid work for clients;
+  - share the official download link (github.com/Vibra-Ingenn or adeptuscamini.com).
+
+You may not:
+  - sell Terminus, charge for it, or bundle it inside a product you sell;
+  - re-upload or redistribute changed copies of it;
+  - decompile, disassemble or reverse-engineer it, except where the law allows this;
+  - remove or change this notice.
+
+Third-party parts included in Terminus keep their own open-source licences; see
+THIRD_PARTY_NOTICES.txt.
+
+Terminus is provided "as is", without warranty of any kind. Adeptus Camini is not liable
+for any damage or loss from using it. Check important results yourself.
+
+Versions released before 2026-11-22 under the MIT licence stay under the MIT licence.
+
+Questions: support@adeptuscamini.com
