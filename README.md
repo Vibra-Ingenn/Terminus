@@ -6,7 +6,33 @@
 
 Drop in your receipts and invoices; get a clean spreadsheet, Markdown, or files for your own AI tools. Runs on your own PC — no AI, nothing uploaded.
 
-![The Terminus screen: five files dropped in, a table of vendors, dates and totals](docs/screenshots/terminus-screen.png)
+![The Terminus screen: files dropped in, a table of vendors, customers, invoice numbers, dates and totals](docs/screenshots/terminus-screen.png)
+
+## See it work
+
+**A pile of documents becomes one table.** Twelve test files (PDFs, a Word file and phone photos) dropped in at once:
+
+![Twelve test documents read into one table in Terminus](docs/screenshots/1-twelve-documents-read.png)
+
+Saved and opened as a spreadsheet, with no typing:
+
+![The same twelve documents as a finished spreadsheet](docs/screenshots/3-spreadsheet-export.png)
+
+**Duplicates are caught.** The same invoice dropped in twice is marked, so it isn't counted twice:
+
+![Two copies of the same invoice marked as duplicates](docs/screenshots/5-duplicates-flagged.png)
+
+**Before and after, one document at a time.** Click a row to see the original next to what Terminus read from it.
+
+A phone photo of a diner receipt:
+
+![A diner receipt photo next to the fields Terminus read from it](docs/screenshots/2-receipt-photo-to-fields.png)
+
+A Word invoice:
+
+![A Word invoice next to the fields Terminus read](docs/screenshots/4-word-invoice-to-fields.png)
+
+All the documents in these pictures are made-up test files.
 
 ## New in 1.1.0
 
