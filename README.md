@@ -4,16 +4,28 @@
 
 # Terminus
 
-Drop in your receipts and invoices; get a clean spreadsheet. Runs on your own PC — no AI, nothing uploaded.
+Drop in your receipts and invoices; get a clean spreadsheet, Markdown, or files for your own AI tools. Runs on your own PC — no AI, nothing uploaded.
 
 ![The Terminus screen: five files dropped in, a table of vendors, dates and totals](docs/screenshots/terminus-screen.png)
+
+## New in 1.1.0
+
+- **Tax-time pack**: a year of receipts and bills added up by category, month and vendor, in one workbook for your accountant.
+- **Budget from bank statements**: reads the transaction lines from bank CSV exports and text PDFs, shows money in, money out and spending by category each month, and checks the lines against the bank's own closing balance.
+- **Fill a PDF form** from your own details and documents. You see every answer and where it came from before anything is written; the original form is never changed.
+- **Watch a folder**: files dropped into an Inbox folder are read and added to a running spreadsheet, and filed if you switch that on.
+- **Tidy a folder**: messy downloads filed into Bills, Bank statements, Letters and more. Preview first, never deletes, one-step undo.
+- **Pictures from documents**: images pulled out next to the Markdown, and the words inside them read with OCR.
+- **More ways out**: Markdown, JSON and a folder an AI tool can read, plus a close-out button for finished rows.
+
+All of it runs on your own PC, with plain rules and no AI. Your files are only read; nothing is uploaded.
 
 ## Download and run
 
 ### Windows
 
 1. Download **[Terminus-windows.zip](../../releases/latest/download/Terminus-windows.zip)** and unzip it into a folder you control (for example `C:\Tools\Terminus\`).
-2. Double-click `docparse.exe`. Your browser opens to the Terminus screen. Drop files on the big area, then use **Save as Excel** or **Save as CSV**. Close the black window to stop Terminus.
+2. Double-click `docparse.exe`. Your browser opens to the Terminus screen. Drop files on the big area, then use **Save as Excel** (real `.xlsx`), **Save as CSV**, **Copy table**, or **Save as JSON**. Close the black window to stop Terminus.
 
    Windows may say "Windows protected your PC" the first time, because Terminus is new and not yet widely downloaded. Click **More info**, then **Run anyway**.
 
@@ -21,8 +33,10 @@ From a terminal, `docparse help` lists every command (`parse`, `batch`, `text`, 
 
 ### Linux
 
-1. Download **[Terminus-linux.tar.gz](../../releases/latest/download/Terminus-linux.tar.gz)** and unpack it: `tar xzf Terminus-linux.tar.gz`
-2. Run `./Terminus/docparse ui`. Your browser opens to the Terminus screen.
+```bash
+go build -o docparse ./cmd/docparse
+./docparse ui
+```
 
 ### Scans and phone photos
 
@@ -33,7 +47,7 @@ Scanned PDFs and phone photos are read with **Tesseract** (free OCR). Terminus i
 
 Point `TESSDATA_PREFIX` at the `tessdata` folder if the installer does not do it for you.
 
-**Scanned PDFs:** Terminus pulls embedded page images out of the PDF first and runs OCR on them — you do not need Poppler for most phone scans (colour JPEG and greyscale work; black-and-white fax-style pages are supported too). If a page still needs rendering, Terminus can use **Poppler** (`pdftoppm`) from your PATH (install Poppler yourself; it is GPL software). Poppler is optional backup only.
+**Scanned PDFs:** Terminus pulls embedded page images out of the PDF first and runs OCR on them — you do not need Poppler for most phone scans (colour JPEG and greyscale work; black-and-white fax-style pages are supported too). If a page still needs rendering, Terminus can use **Poppler** (`pdftoppm`) from a `poppler\` folder next to `docparse.exe` (GPL — see `poppler/README.txt`) or from your PATH. Poppler is optional backup only.
 
 ## What it finds
 
@@ -51,7 +65,26 @@ Turn on **Medical fields** on the screen (or use `--pack medical` on the command
 
 Missing fields are left blank — Terminus does not guess.
 
-## Command line
+## Ways to get your data out
+
+| Format | Who it's for |
+|--------|----------------|
+| **Excel (`.xlsx`)** | Spreadsheets in Microsoft Excel or LibreOffice — totals stay numbers you can sum. |
+| **CSV** | Any spreadsheet or database import. |
+| **Copy table** | Paste straight into Google Sheets or Excel. |
+| **JSON** | Your own scripts, automations, or AI tools on your PC. |
+| **Markdown** | Clean text for notes, wikis, or RAG — headings and tables when the layout allows. |
+| **AI skill (zip)** | A folder an AI (Claude, Cursor, and others) can open for lookup — split by section, not one giant paste. |
+| **Training file (`.jsonl`)** | Plain `{"text": "..."}` lines for Unsloth-style fine-tuning — teaches style and wording, **not** reliable facts. For lookup, use an AI skill instead. |
+
+## For developers
+
+Build:
+
+```bash
+go build -o dist/docparse.exe ./cmd/docparse   # Windows
+go test ./...
+```
 
 | Command | Purpose |
 |---------|---------|
@@ -61,7 +94,96 @@ Missing fields are left blank — Terminus does not guess.
 | `docparse check <dir>` | Parse every PDF in a folder (regression / QA) |
 | `docparse heal <file>` | Repair report + healed copy when possible |
 | `docparse batch --in <dir> --out <dir>` | One JSON file per input |
+| `docparse batch --in <dir> --out <dir> --format xlsx` | One workbook with all rows |
+| `docparse markdown <file> [-o out.md]` | Clean Markdown; with `-o`, saves pictures in `out_images/` and links them |
+| `docparse skill <paths...> --name <id> -o <dir> [--description "..."]` | AI skill folder; pictures go in `images/` with `images/index.json` (`file`, `page`, `width`, `height`, `ocr_text`, `description` — `description` stays empty for a later vision step) |
+| `docparse train <paths...> -o data.jsonl [--words 800]` | Training JSONL |
 | `docparse serve --port 8765` | Same server as `ui`, without opening the browser |
+| `docparse tidy <folder>` | Preview where files would go (nothing moves) |
+| `docparse tidy <folder> --apply` | File them (undo file written first) |
+| `docparse tidy --undo <undo.json>` | Put every file back |
+| `docparse watch <inbox>` | Watch a folder: read new files, append to `Terminus sheet.xlsx` |
+| `docparse watch <inbox> --file-them` | Same, and file each document with tidy rules (undo first) |
+| `docparse watch <inbox> --once` | Process stable files now and exit (for scripts) |
+
+## Watch an Inbox folder
+
+Drop bills and scans into one folder (your Inbox). Terminus polls every five seconds, waits until each file stops changing, reads it, and **appends** a row to **`Terminus sheet.xlsx`** and **`Terminus sheet.csv`** in that folder (same columns as the tax pack's *Every document* sheet).
+
+- **File them for me** is **off** by default: read + spreadsheet only; **nothing moves**.
+- With **`--file-them`**, each read file is filed with the same rules as **`docparse tidy`**. An undo file is written **before** each move.
+- Temp names (`.part`, `.crdownload`, `.tmp`, `~$…`), hidden files, and the spreadsheet itself are ignored.
+- The same **content** is never processed twice (SHA-256 remembered in your Terminus workspace, not inside the Inbox).
+
+```bash
+docparse watch ~/Inbox
+docparse watch ~/Inbox --file-them
+docparse watch ~/Inbox --sheet "~/Inbox/My running sheet.xlsx"
+```
+
+The **Watch a folder** panel on the local screen can start and stop the same watcher on the server.
+
+### Keep it running
+
+**Linux (systemd user unit)** — adjust paths, then:
+
+```ini
+# ~/.config/systemd/user/terminus-watch.service
+[Unit]
+Description=Terminus watch Inbox
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/docparse watch %h/Inbox
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+```bash
+systemctl --user enable --now terminus-watch.service
+```
+
+**Windows** — Task Scheduler: trigger *At log on*, action `docparse.exe watch C:\Users\You\Inbox` (add `--file-them` if you want filing). Use *Run whether user is logged on or not* only if you understand how that account can reach the folder.
+
+To run the web screen at login without opening a browser, set `TERMINUS_NO_OPEN_BROWSER=true` before `docparse serve`.
+
+## Tidy a folder
+
+Messy Downloads folders are common: `scan0012.pdf`, `document (3).pdf`, the same bill saved twice. Terminus already reads those files. **Tidy** uses what it found to sort them into folders.
+
+**Safety (plain words):**
+
+- **Preview first.** `docparse tidy ~/Downloads` prints a plan. Nothing moves until you add `--apply`.
+- **Nothing is deleted.** Exact copies go to `Duplicates (exact copies)/` with their names kept.
+- **Never overwrites.** If two files would get the same name, Terminus adds ` (2)`, ` (3)`, and so on.
+- **Undo.** Every apply writes `<folder>/.terminus-undo-<date>-<time>.json` *before* any move. `docparse tidy --undo that-file.json` puts files back and refuses if something changed.
+
+Folder rules use Terminus's own `document_type`, vendor, and date:
+
+- Invoices → `Bills/Invoices/<year>/<vendor>/`
+- Receipts → `Bills/Receipts/<year>/<vendor>/`
+- Bank statements → `Bank statements/<year>/<bank>/`
+- Letters → `Letters/`; medical → `Medical/`
+- Other documents → `Documents/<topic>/` from keyword rules (or plain `Documents/`)
+
+Unreadable files (images, zips, and similar) stay where they are unless they are byte-for-byte duplicates.
+
+**Custom topic rules** (optional JSON):
+
+```json
+{"Gardening": ["garden", "plant", "soil", "compost"]}
+```
+
+```bash
+docparse tidy ~/Downloads --rules my-rules.json
+```
+
+Built-in topics include Programming, Security, Networking, AI, Taxes, Insurance, and Manuals (3+ keyword hits required). See `docparse tidy --help` for the format.
+
+**Optional local model (off by default):** `--model-url http://127.0.0.1:8990` may pick a topic for documents keyword rules could not place. Only `localhost` URLs are accepted.
 
 Example:
 
@@ -90,7 +212,32 @@ Environment:
 - `TERMINUS_SAFE_MODE` — blocks risky shell commands (default on). `JANUS_SAFE_MODE` still works (legacy).
 - `TERMINUS_MEDICAL_STRICT` — with the medical pack, blocks outbound network from tools. `TERMINUS_HIPAA_STRICT` and `JANUS_HIPAA_STRICT` still work (legacy).
 
-Checking your own files: put test PDFs in a folder and run `docparse check <folder>`.
+Regression PDFs (optional): put your own test PDFs in a folder, set `TERMINUS_REGRESSION_PDFS` to it, and run `go test ./...` (or `docparse check <folder>`).
+
+## Tax-time pack
+
+```bash
+docparse taxpack ~/Receipts --year 2026
+```
+
+Adds up every receipt, invoice and bill dated in that year by category, month and vendor, and writes `Tax pack 2026.xlsx` (plus a CSV) into the folder. Each line says how its category was decided. Copies of the same bill are counted once, bills with no readable total are listed under **Needs a look** instead of being added in, and different currencies are never added together. Change a category once (`--set-category "Acme Supply=Office & supplies"`, or the dropdown on the screen) and it sticks. Terminus adds up what it read; it doesn't decide what's deductible.
+
+## Budget from bank statements
+
+```bash
+docparse budget ~/Statements --year 2026
+```
+
+Reads the transaction lines from bank CSV exports (separate money-in/money-out columns or one signed amount; `1,234.56` and `1.234,56`; US and day-first dates) and from text PDF statements. Writes `Budget 2026.xlsx` with money in, money out and what's left each month, spending by category, and the top places your money went. When a statement prints its opening and closing balance, Terminus checks the lines add up and tells you plainly if something is missing. The same statement saved twice is counted once.
+
+## Fill a PDF form
+
+```bash
+docparse form application.pdf --from ~/Invoices          # shows the plan, writes nothing
+docparse form application.pdf --from ~/Invoices --apply  # writes "application (filled).pdf"
+```
+
+Fills a PDF form's boxes from your **My details** profile and the documents you point at. The plan lists every box, the proposed answer and where it came from. Boxes with no clear answer stay empty; two different answers are both shown and neither is used. ID, bank and card numbers are never taken from documents, only from what you typed into your own profile. The original form is never changed.
 
 ## Honest limits
 
@@ -111,12 +258,12 @@ From real runs on 96 real PDFs (books, papers, manuals, datasheets, cheat sheets
 
 Terminus is free and stays free. If it saves you time, a star on GitHub helps other people find it.
 
-Want it to run by itself (watch a folder, fill a spreadsheet every day)? **Vibe Engine**, my paid tool, runs Terminus and my other tools together, the same way every time: [adeptuscamini.com](https://adeptuscamini.com). Either way, thanks for using it.
+Want it to do more by itself (read your email attachments, file them, and tell you what needs you today)? **Vibe Engine**, my paid tool, runs Terminus and my other tools together, the same way every time: [adeptuscamini.com](https://adeptuscamini.com). Either way, thanks for using it.
 
-## Licence
+## License
 
-Terminus is freeware: free to use for personal and business work, on as many computers as you like. The source code is not public. See [LICENSE.txt](LICENSE.txt). Versions released before 2026-11-22 stay under the MIT licence.
+MIT. See [LICENSE](LICENSE).
 
 ---
 
-<p align="center"><i lang="la" title="We refuse to keep doing the same broken things; we do other things.">Recusamus pergere eadem fracta facere; nos alia facimus.</i></p>
+<p align="center"><i lang="la" title="We refuse to accept the same broken things, we build differently!">Recusamus eadem fracta accipere. Nos aliter aedificamus.</i><br><sub>We refuse to accept the same broken things, we build differently!</sub></p>
